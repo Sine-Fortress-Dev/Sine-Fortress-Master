@@ -1297,6 +1297,7 @@ bool CTFWeaponBase::Deploy( void )
 		pPlayer->SetNextAttack( m_flNextPrimaryAttack );
 
 		m_flLastDeployTime = gpGlobals->curtime;
+		m_flLastReadyTime = gpGlobals->curtime + flDeployTime;
 
 #ifdef GAME_DLL
 		// Reset our deploy-lifetime kill counter.
