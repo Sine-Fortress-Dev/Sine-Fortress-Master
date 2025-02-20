@@ -1,29 +1,16 @@
-<img src="./team-comtress-2.png" align="center">
+<img src="./sine-logo.png" align="center">
 
-[![ko-fi](https://img.shields.io/badge/Support%20me%20on-Ko--fi-FF5E5B.svg?logo=ko-fi&style=flat-square)](https://docs.comfig.app/latest/support_me/)
-[![Join the Discord chat](https://img.shields.io/badge/Discord-%23patch--pack-5865F2.svg?style=flat-square&logo=discord)](https://comfig.app/discord)
+[![Join the Discord chat](https://img.shields.io/badge/Discord-%23patch--pack-5865F2.svg?style=flat-square&logo=discord)](https://discord.gg/WxdD3keZZP)
 
-# Team Comtress 2
+# Sine Fortress
+Sine Fortress is a Team Fortress 2 Sourcemod set in the 90's with more variety in environments, themes, and two new classes. Existing classes and their roles will stay mostly the same but with alternatives focused on being new weapons rather than stat-swaps, with the additional classes focused on filling new roles and niches over recreating existing sub-classes and gameplay styles present in Live TF2. 
 
-A mod for Team Fortress 2 to fix bugs, improve performance, and add quality of life, with the goal of having those changes pulled upstream by Valve to the modern game. This mod helps us test features, and helps users have an area where they can enjoy the changes and get involved.
+Aesthetically, Sine Fortress wants to follow the corporate themes of TF2, albeit moving away from the heavy focus on dust bowls and gravel pits. We want to explore the new kinds of companies that can exist in a 90's era interpretation of TF2, focusing on more urban and corporate environments. Respawn areas are less generic locker rooms and more furnished breakrooms, security offices in malls, and spaces that a professional in the 90s could typically find themselves in.
 
-We're also experimenting with continuing support work for gameplay balance and other game features. While this is outside of the original scope of the project, we think it's an area we can create value for players of the mod and the community. We won't be submitting these changes to Valve, though they may inform other changes more in line with the original project.
-
-## How can I help?
-
-1. Report bugs you'd like to see fixed in TF2 or TC2 through the issues page.
-2. Suggest quality of life improvements (but not balance changes) through the issues page.
-3. Install TC2 and play the game to test stability, bug fixes, performance, and enjoyment.
-
-## Installation
-
-1. Install the [itch.io app](https://itch.io/app)
-2. Download [Team Comtress 2](https://mastercoms.itch.io/tc2) through the app to get auto-updates
-3. Get Source SDK Base 2013 Multiplayer under Tools in the Steam Library
-4. You can now play Team Comtress 2 in the itch app!
+On the creation side of things, we want to provide tools and assets for mapmakers to create maps unique to Sine, allowing gameplay and story-telling possibilities that cannot be realized in Live TF2 without significant compromise. We are aiming to provide a framework with options like RGB team colors, unique environments, and wildly different gameplay mechanics and game modes that would not be achievable in Live TF2 and would be unique to our mod as a focus.
 
 ## Legal
 
 Valve, the Valve logo, Steam, the Steam logo, Team Fortress, the Team Fortress logo, Source, the Source logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries.
 
-Team Comtress 2 is not sponsored, endorsed, licensed by, or affiliated with Valve Corporation.
+Sine Fortress is not sponsored, endorsed, licensed by, or affiliated with Valve Corporation.
