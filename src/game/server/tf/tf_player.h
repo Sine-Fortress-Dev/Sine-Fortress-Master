@@ -1230,6 +1230,11 @@ private:
 	int					m_nPrevRoundTeamNum;
 
 public:
+	bool				SetPowerplayEnabled( bool bOn );
+	bool				PlayerHasPowerplay( void );
+	void				PowerplayThink( void );
+	CNetworkVar( bool, m_bInPowerPlay );
+
 	bool				IsGoingFeignDeath( void ) { return m_bGoingFeignDeath; }
 
 	void					SetDeployingBombState( BombDeployingState_t nDeployingBombState ) { m_nDeployingBombState = nDeployingBombState; }
@@ -1510,6 +1515,8 @@ private:
 	CNetworkVar( int, m_iPlayerSkinOverride );
 
 	CUtlMap<int, float> m_PlayersExtinguished;	// userID and most recent time they were extinguished for bonus points
+
+	CUtlMap<itemid_t, int> m_mapNoiseMakerUses;		// noise maker item index and number of uses
 
 	float m_flLastAutobalanceTime;
 
