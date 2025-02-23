@@ -1,3 +1,4 @@
 [submodule "game/sine_fortress"]
 	path = game/sine_fortress
 	url = git@github.com:Sine-Fortress-Dev/sine_fortress.git
+	branch = main
