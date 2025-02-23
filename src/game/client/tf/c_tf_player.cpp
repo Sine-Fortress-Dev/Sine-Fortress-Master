@@ -204,10 +204,10 @@ ConVar tf_killstreakeyes_maxkills( "tf_killstreakeyes_maxkills", "10", FCVAR_DEV
 
 ConVar cl_autorezoom( "cl_autorezoom", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "When set to 1, sniper rifle will re-zoom after firing a zoomed shot." );
 ConVar tf_remember_activeweapon( "tf_remember_activeweapon", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "Setting this to 1 will make the active weapon persist between lives." );
-ConVar tf_remember_lastswitched( "tf_remember_lastswitched", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "Setting this to 1 will make the 'last weapon' persist between lives." );
+ConVar tf_remember_lastswitched( "tf_remember_lastswitched", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "Setting this to 1 will make the 'last weapon' persist between lives." );
 ConVar cl_autoreload( "cl_autoreload", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "When set to 1, clip-using weapons will automatically be reloaded whenever they're not being fired." );
 
-ConVar tf_respawn_on_loadoutchanges( "tf_respawn_on_loadoutchanges", "1", FCVAR_ARCHIVE, "When set to 1, you will automatically respawn whenever you change loadouts inside a respawn zone." );
+ConVar tf_respawn_on_loadoutchanges( "tf_respawn_on_loadoutchanges", "0", FCVAR_CHEAT, "When set to 1, you will automatically respawn whenever you change loadouts inside a respawn zone." );
 
 ConVar sb_dontshow_maxplayer_warning( "sb_dontshow_maxplayer_warning", "0", FCVAR_ARCHIVE );
 ConVar sb_close_browser_on_connect( "sb_close_browser_on_connect", "1", FCVAR_ARCHIVE );
@@ -215,7 +215,8 @@ ConVar sb_close_browser_on_connect( "sb_close_browser_on_connect", "1", FCVAR_AR
 ConVar tf_spectate_pyrovision( "tf_spectate_pyrovision", "0", FCVAR_ARCHIVE, "When on, spectator will see the world with Pyrovision active", VisionMode_ChangeCallback );
 ConVar tf_replay_pyrovision( "tf_replay_pyrovision", "0", FCVAR_ARCHIVE, "When on, replays will be seen with Pyrovision active", VisionMode_ChangeCallback );
 
-ConVar tf_taunt_first_person( "tf_taunt_first_person", "0", FCVAR_NONE, "1 = taunts remain first-person" );
+ConVar tf_taunt_first_person( "tf_taunt_first_person", "0", FCVAR_ARCHIVE, "1 = taunts remain first-person" );
+ConVar tf_taunt_first_person_always( "tf_taunt_first_person_always", "1", FCVAR_REPLICATED, "1 = taunts are forced to remain first-person" );
 
 ConVar tf_romevision_opt_in( "tf_romevision_opt_in", "0", FCVAR_ARCHIVE, "Enable Romevision in Mann vs. Machine mode when available." );
 ConVar tf_romevision_skip_prompt( "tf_romevision_skip_prompt", "0", FCVAR_ARCHIVE, "If nonzero, skip the prompt about sharing Romevision." );
@@ -1329,6 +1330,20 @@ bool C_TFRagdoll::GetAttachment( int iAttachment, matrix3x4_t &attachmentToWorld
 	}
 }
 
+bool C_TFRagdoll::GetAttachmentDeferred( int iAttachment, matrix3x4_t &attachmentToWorld )
+{
+	int iHeadAttachment = LookupAttachment( "head" );
+	if ( IsDecapitation() && (iAttachment == iHeadAttachment) )
+	{
+		MatrixCopy( m_mHeadAttachment, attachmentToWorld );
+		return true;
+	}
+	else
+	{
+		return BaseClass::GetAttachmentDeferred( iAttachment, attachmentToWorld );
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  :  - 
@@ -1368,6 +1383,9 @@ bool C_TFRagdoll::IsRagdollVisible()
 #define DISSOLVE_FADE_OUT_MODEL_END_TIME	2.0f
 #define DISSOLVE_FADE_OUT_START_TIME		2.0f
 #define DISSOLVE_FADE_OUT_END_TIME			2.0f
+
+extern ConVar g_ragdoll_lvfadespeed;
+extern ConVar g_ragdoll_fadespeed;
 
 void C_TFRagdoll::ClientThink( void )
 {
@@ -1510,9 +1528,16 @@ void C_TFRagdoll::ClientThink( void )
 	if ( m_bFadingOut == true )
 	{
 		int iAlpha = GetRenderColor().a;
-		int iFadeSpeed = 600.0f;
+		int iFadeSpeed = ( g_RagdollLVManager.IsLowViolence() ) ? g_ragdoll_lvfadespeed.GetInt() : g_ragdoll_fadespeed.GetInt();
 
-		iAlpha = MAX( iAlpha - ( iFadeSpeed * gpGlobals->frametime ), 0 );
+		if (iFadeSpeed < 1)
+		{
+			iAlpha = 0;
+		}
+		else
+		{
+			iAlpha = MAX( iAlpha - ( iFadeSpeed * gpGlobals->frametime ), 0 );
+		}
 
 		SetRenderMode( kRenderTransAlpha );
 		SetRenderColorA( iAlpha );
@@ -1531,15 +1556,22 @@ void C_TFRagdoll::ClientThink( void )
 		if ( cl_ragdoll_forcefade.GetBool() )
 		{
 			m_bFadingOut = true;
-			float flDelay = cl_ragdoll_fade_time.GetFloat() * 0.33f;
-			m_fDeathTime = gpGlobals->curtime + flDelay;
-
 			RemoveAllDecals();
-		}
 
-		// Fade out after the specified delay.
-		StartFadeOut( cl_ragdoll_fade_time.GetFloat() * 0.33f );
-		return;
+			float flDelay = cl_ragdoll_fade_time.GetFloat() * 0.33f;
+			if (flDelay > 0.01f)
+			{
+				m_fDeathTime = gpGlobals->curtime + flDelay;
+				return;
+			}
+			m_fDeathTime = -1;
+		}
+		else
+		{
+			// Fade out after the specified delay.
+			StartFadeOut( cl_ragdoll_fade_time.GetFloat() * 0.33f );
+			return;
+		}
 	}
 
 	// Remove us if our death time has passed.
@@ -3756,6 +3788,8 @@ IMPLEMENT_CLIENTCLASS_DT( C_TFPlayer, DT_TFPlayer, CTFPlayer )
 	RecvPropInt( RECVINFO( m_iPlayerSkinOverride ) ),
 	RecvPropBool( RECVINFO( m_bViewingCYOAPDA ) ),
 	RecvPropBool( RECVINFO( m_bRegenerating ) ),
+	RecvPropInt( RECVINFO( m_nRestrictAchievements ) ),
+	RecvPropInt( RECVINFO( m_nRestrictQuests ) ),
 END_RECV_TABLE()
 
 
@@ -3898,6 +3932,8 @@ C_TFPlayer::C_TFPlayer() :
 	m_nExperienceLevelProgress = 0;
 	m_nPrevExperienceLevel = 0;
 
+	m_bHasFirstPersonWorldModel = false;
+
 	m_bMatchSafeToLeave = true;
 
 	for( int i=0; i<kBonusEffect_Count; ++i )
@@ -3941,6 +3977,9 @@ C_TFPlayer::C_TFPlayer() :
 	m_pPasstimeAskForBallReticle = NULL;
 
 	m_iPlayerSkinOverride = 0;
+
+	m_nRestrictAchievements = 0;
+	m_nRestrictQuests = 0;
 
 	ListenForGameEvent( "player_hurt" );
 	ListenForGameEvent( "hltv_changed_mode" );
@@ -5484,7 +5523,7 @@ void C_TFPlayer::TurnOnTauntCam( void )
 	m_TauntCameraData.m_vecHullMin.Init( -9.0f, -9.0f, -9.0f );
 	m_TauntCameraData.m_vecHullMax.Init( 9.0f, 9.0f, 9.0f );
 
-	if ( tf_taunt_first_person.GetBool() )
+	if ( tf_taunt_first_person.GetBool() || tf_taunt_first_person_always.GetBool() )
 	{
 		// Remain in first-person.
 	}
@@ -7502,7 +7541,7 @@ void C_TFPlayer::DropWearable( C_TFWearable *pItem, const breakablepropparams_t 
 	}
 
 	pEntity->m_nSkin = m_nSkin;
-	pEntity->StartFadeOut( 15.0f );
+	pEntity->StartFadeOut( cl_ragdoll_fade_time.GetFloat() );
 
 	IPhysicsObject *pPhysicsObject = pEntity->VPhysicsGetObject();
 	if ( !pPhysicsObject )

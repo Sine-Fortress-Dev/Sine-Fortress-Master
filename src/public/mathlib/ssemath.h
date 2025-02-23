@@ -1982,13 +1982,13 @@ FORCEINLINE fltx4 RotateLeft2( const fltx4 & a )
 // a b c d -> d a b c
 FORCEINLINE fltx4 RotateRight( const fltx4 & a )
 {
-	return _mm_shuffle_ps( a, a, _MM_SHUFFLE( 0, 3, 2, 1) );
+	return _mm_shuffle_ps( a, a, MM_SHUFFLE_REV( 3, 0, 1, 2 ) );
 }
 
 // a b c d -> c d a b
 FORCEINLINE fltx4 RotateRight2( const fltx4 & a )
 {
-	return _mm_shuffle_ps( a, a, _MM_SHUFFLE( 1, 0, 3, 2 ) );
+	return _mm_shuffle_ps( a, a, MM_SHUFFLE_REV( 2, 3, 0, 1 ) );
 }
 
 

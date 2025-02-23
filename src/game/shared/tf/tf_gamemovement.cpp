@@ -1164,12 +1164,6 @@ void CTFGameMovement::PreventBunnyJumping()
 //-----------------------------------------------------------------------------
 void CTFGameMovement::ToggleParachute()
 {
-	if ( ( m_pTFPlayer->GetFlags() & FL_ONGROUND ) )
-	{
-		m_pTFPlayer->m_Shared.RemoveCond( TF_COND_PARACHUTE_DEPLOYED );
-		return;
-	}
-
 	if ( mv->m_nOldButtons & IN_JUMP )
 		return;
 
@@ -1196,9 +1190,10 @@ void CTFGameMovement::ToggleParachute()
 		}
 		else
 		{
+			bool bOnGround = ( player->GetGroundEntity() != NULL );
 			int iParachuteDisabled = 0;
 			CALL_ATTRIB_HOOK_INT_ON_OTHER( m_pTFPlayer, iParachuteDisabled, parachute_disabled );
-			if ( !iParachuteDisabled && ( tf_parachute_deploy_toggle_allowed.GetBool() || !m_pTFPlayer->m_Shared.InCond( TF_COND_PARACHUTE_DEPLOYED ) ) )
+			if ( !bOnGround && !iParachuteDisabled && ( tf_parachute_deploy_toggle_allowed.GetBool() || !m_pTFPlayer->m_Shared.InCond( TF_COND_PARACHUTE_DEPLOYED ) ) )
 			{
 				m_pTFPlayer->m_Shared.AddCond( TF_COND_PARACHUTE_ACTIVE );
 				m_pTFPlayer->m_Shared.AddCond( TF_COND_PARACHUTE_DEPLOYED );
@@ -1430,7 +1425,7 @@ int CTFGameMovement::CheckStuck( void )
 						m_pTFPlayer->GetTeam()->GetName(),
 						m_pTFPlayer->GetAbsOrigin().x, m_pTFPlayer->GetAbsOrigin().y, m_pTFPlayer->GetAbsOrigin().z );
 
-					m_pTFPlayer->TakeDamage( CTakeDamageInfo( m_pTFPlayer, m_pTFPlayer, vec3_origin, m_pTFPlayer->WorldSpaceCenter(), 999999.9f, DMG_CRUSH ) );
+					m_pTFPlayer->CommitSuicide(false, true);
 				}
 				else
 				{
@@ -3022,9 +3017,9 @@ void CTFGameMovement::SetGroundEntity( trace_t *pm )
 		{
 			m_pTFPlayer->SpeakConceptIfAllowed( MP_CONCEPT_DOUBLE_JUMP, "started_jumping:0" );
 		}
-		m_pTFPlayer->m_Shared.SetWeaponKnockbackID( -1 );
-		m_pTFPlayer->m_bScattergunJump = false;
 #endif // GAME_DLL
+		m_pTFPlayer->m_Shared.SetWeaponKnockbackID( -1 );
+		m_pTFPlayer->m_Shared.m_bScattergunJump = false;
 		m_pTFPlayer->m_Shared.SetAirDash( 0 );
 		m_pTFPlayer->m_Shared.SetAirDucked( 0 );
 

@@ -472,6 +472,7 @@ BEGIN_PREDICTION_DATA_NO_BASE( CTFPlayerShared )
 	DEFINE_PRED_FIELD( m_bIsTargetedForPasstimePass, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ), // does this belong here?
 	DEFINE_PRED_FIELD( m_askForBallTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_ARRAY( m_flItemChargeMeter, FIELD_FLOAT, LAST_LOADOUT_SLOT_WITH_CHARGE_METER, FTYPEDESC_INSENDTABLE ),
+	DEFINE_FIELD( m_bScattergunJump, FIELD_BOOLEAN ),
 END_PREDICTION_DATA()
 
 // Server specific.
@@ -783,6 +784,8 @@ CTFPlayerShared::CTFPlayerShared()
 	m_flInvisibility = 0.0f;
 	m_flPrevInvisibility = 0.f;
 	m_flTmpDamageBonusAmount = 1.0f;
+
+	m_bScattergunJump = false;
 
 	m_bFeignDeathReady = false;
 
@@ -2732,6 +2735,8 @@ void CTFPlayerShared::ConditionGameRulesThink( void )
 		if ( m_pOuter->IsAllowedToRemoveTaunt() && gpGlobals->curtime > m_pOuter->GetTauntRemoveTime() )
 		{
 			RemoveCond( TF_COND_TAUNTING );
+			// Make sure we clear out this flag
+			m_pOuter->m_bAllowMoveDuringTaunt = false;
 		}
 	}
 	if ( InCond( TF_COND_BURNING ) && !m_pOuter->m_bInPowerPlay )
@@ -3090,9 +3095,16 @@ void CTFPlayerShared::ConditionThink( void )
 
 	VehicleThink();
 
-	if ( m_pOuter->GetFlags() & FL_ONGROUND && InCond( TF_COND_PARACHUTE_ACTIVE ) )
+	if ( m_pOuter->GetFlags() & FL_ONGROUND )
 	{
-		RemoveCond( TF_COND_PARACHUTE_ACTIVE );
+		if ( InCond( TF_COND_PARACHUTE_ACTIVE ) )
+		{
+			RemoveCond( TF_COND_PARACHUTE_ACTIVE );
+		}
+		if ( InCond( TF_COND_PARACHUTE_DEPLOYED ) )
+		{
+			RemoveCond( TF_COND_PARACHUTE_DEPLOYED );
+		}
 	}
 
 	// See if we should be pulsing our radius heal
@@ -3959,6 +3971,13 @@ void CTFPlayerShared::OnAddTaunting( void )
 	m_pOuter->PlayWearableAnimsForPlaybackEvent( WAP_START_TAUNTING );
 #else
 	FireClientTauntParticleEffects();
+	static ConVarRef cl_first_person_uses_world_model("cl_first_person_uses_world_model");
+	m_pOuter->m_bHasFirstPersonWorldModel = cl_first_person_uses_world_model.GetBool();
+	if ( !m_pOuter->m_bHasFirstPersonWorldModel )
+	{
+		cl_first_person_uses_world_model.SetValue(true);
+	}
+	m_pOuter->FlushAllPlayerVisibilityState();
 #endif
 }
 
@@ -4036,6 +4055,13 @@ void CTFPlayerShared::OnRemoveTaunting( void )
 	}
 
 	m_flTauntParticleRefireTime = 0.0f;
+
+	if (!m_pOuter->m_bHasFirstPersonWorldModel)
+	{
+		static ConVarRef cl_first_person_uses_world_model("cl_first_person_uses_world_model");
+		cl_first_person_uses_world_model.SetValue(false);
+	}
+	m_pOuter->FlushAllPlayerVisibilityState();
 #endif
 
 	m_pOuter->m_PlayerAnimState->ResetGestureSlot( GESTURE_SLOT_VCD );
@@ -5630,7 +5656,10 @@ void CTFPlayerShared::OnAddHalloweenKartCage( void )
 	if ( !m_pOuter->m_hHalloweenKartCage )
 	{
 		m_pOuter->m_hHalloweenKartCage = C_PlayerAttachedModel::Create( "models/props_halloween/bumpercar_cage.mdl", m_pOuter, 0, vec3_origin, PAM_PERMANENT, 0 );
-		m_pOuter->m_hHalloweenKartCage->FollowEntity( m_pOuter, true );
+		if ( m_pOuter->m_hHalloweenKartCage )
+		{
+			m_pOuter->m_hHalloweenKartCage->FollowEntity( m_pOuter, true );
+		}
 	}
 #else
 	AddCond( TF_COND_FREEZE_INPUT );
@@ -10452,8 +10481,8 @@ void CTFPlayer::FireBullet( CTFWeaponBase *pWpn, const FireBulletsInfo_t &info, 
 }
 
 #ifdef CLIENT_DLL
-static ConVar tf_impactwatertimeenable( "tf_impactwatertimeenable", "0", FCVAR_CHEAT, "Draw impact debris effects." );
-static ConVar tf_impactwatertime( "tf_impactwatertime", "1.0f", FCVAR_CHEAT, "Draw impact debris effects." );
+static ConVar tf_impactwatertimeenable( "tf_impactwatertimeenable", "1", 0, "Rate limit bullet impact effects on water." );
+static ConVar tf_impactwatertime( "tf_impactwatertime", "0.2f", 0, "The interval between bullet impact effects on water." );
 #endif
 
 //-----------------------------------------------------------------------------
@@ -13242,12 +13271,6 @@ int CTFPlayerShared::GetSequenceForDeath( CBaseAnimating* pRagdoll, bool bBurnin
 {
 	if ( !pRagdoll )
 		return -1;
-
-	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
-	{
-		if ( m_pOuter && ( m_pOuter->GetTeamNumber() == TF_TEAM_PVE_INVADERS ) )
-			return -1;
-	}
 
 	int iDeathSeq = -1;
 // 	if ( bBurning )

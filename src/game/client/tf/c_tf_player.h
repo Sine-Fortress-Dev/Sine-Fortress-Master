@@ -868,6 +868,9 @@ private:
 	int m_nExperienceLevelProgress;
 	int m_nPrevExperienceLevel;
 
+	// First person taunting -- use world model during taunting
+	bool m_bHasFirstPersonWorldModel;
+
 	// Matchmaking
 	// is this player bound to the match on penalty of abandon. Sync'd via local-player-only DT
 	bool m_bMatchSafeToLeave;
@@ -937,6 +940,10 @@ public:
 
 	int GetSkinOverride() const { return m_iPlayerSkinOverride; }
 
+	// 0 - no restrictions. 1 - restrict class-specific achievements/quests only. 2 - restrict ALL achievements/quests.
+	short GetAchievementRestrictions() const { return m_nRestrictAchievements; }
+	short GetQuestRestrictions() const { return m_nRestrictQuests; }
+
 	virtual void ClientAdjustStartSoundParams( EmitSound_t &params ) override;
 	virtual void ClientAdjustStartSoundParams( StartSoundParams_t& params ) override;
 
@@ -966,6 +973,9 @@ private:
 	float m_flTempForceDrawViewModelCycle  = 0.0f;
 
 	CNetworkVar( int, m_iPlayerSkinOverride );
+
+	CNetworkVar( short, m_nRestrictAchievements );
+	CNetworkVar( short, m_nRestrictQuests );
 };
 
 inline C_TFPlayer* ToTFPlayer( C_BaseEntity *pEntity )
@@ -1054,6 +1064,7 @@ public:
 	int GetDamageCustom() { return m_iDamageCustom; }
 
 	virtual bool GetAttachment( int iAttachment, matrix3x4_t &attachmentToWorld );
+	virtual bool GetAttachmentDeferred( int iAttachment, matrix3x4_t &attachmentToWorld );
 
 	int GetClass() { return m_iClass; }
 

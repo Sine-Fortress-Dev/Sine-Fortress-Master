@@ -744,7 +744,7 @@ void CTFWeaponBaseMelee::Smack( void )
 #ifdef GAME_DLL
 		for( int i=0; i<m_potentialVictimVector.Count(); ++i )
 		{
-			if ( m_potentialVictimVector[i] != NULL && m_potentialVictimVector[i]->IsAlive() )
+			if ( m_potentialVictimVector[i] == NULL || !m_potentialVictimVector[i]->IsAlive() )
 			{
 				bIsCleanMiss = false;
 				break;
@@ -828,7 +828,7 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity* ent, trace_t& trace, float 
 
 		// Get owner forward view vector
 		Vector vecOwnerForward;
-		AngleVectors(pPlayer->GetAbsAngles(), &vecOwnerForward);
+		AngleVectors(pPlayer->EyeAngles(), &vecOwnerForward);
 		vecOwnerForward.z = 0.0f;
 		vecOwnerForward.NormalizeInPlace();
 
@@ -1001,7 +1001,23 @@ float CTFWeaponBaseMelee::GetForceScale( void )
 float CTFWeaponBaseMelee::GetMeleeDamage( CBaseEntity *pTarget, int* piDamageType, int* piCustomDamage )
 {
 	float flDamage = m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_nDamage;
-	CALL_ATTRIB_HOOK_FLOAT( flDamage, mult_dmg );
+	if (GetWeaponID() == TF_WEAPON_WRENCH && dynamic_cast<CBaseObject*>(pTarget))
+	{
+		// Don't stack damage mults for buildings if we're using a wrench.
+		// This is so that damage vs sappers and buildings are similar
+		// Sappers use a static value of 65 base damage, modified by the building damage multiplier
+		// However, buildings **are** usually affected by the base multiplier
+		float flDamageBuildingMult = 1.0f;
+		CALL_ATTRIB_HOOK_FLOAT(flDamageBuildingMult, mult_dmg_vs_buildings);
+		if (flDamageBuildingMult == 1.0f)
+		{
+			CALL_ATTRIB_HOOK_FLOAT(flDamage, mult_dmg);
+		}
+	}
+	else
+	{
+		CALL_ATTRIB_HOOK_FLOAT( flDamage, mult_dmg );
+	}
 
 	int iCritDoesNoDamage = 0;
 	CALL_ATTRIB_HOOK_INT( iCritDoesNoDamage, crit_does_no_damage );

@@ -79,7 +79,7 @@ ConVar weapon_medigun_resist_num_chunks( "weapon_medigun_resist_num_chunks", "4"
 ConVar tf_vaccinator_uber_charge_rate_modifier( "tf_vaccinator_uber_charge_rate_modifier", "1.0", FCVAR_CHEAT | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY , "Vaccinator uber charge rate." );
 
 #if defined (CLIENT_DLL)
-ConVar tf_medigun_autoheal( "tf_medigun_autoheal", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "Setting this to 1 will cause the Medigun's primary attack to be a toggle instead of needing to be held down." );
+ConVar tf_medigun_autoheal( "tf_medigun_autoheal", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "Setting this to 1 will cause the Medigun's primary attack to be a toggle instead of needing to be held down." );
 #endif
 
 #if !defined (CLIENT_DLL)
@@ -1253,7 +1253,7 @@ bool CWeaponMedigun::FindAndHealTargets( void )
 			if ( pTFPlayer && weapon_medigun_charge_rate.GetFloat() )
 			{
 #ifdef GAME_DLL
-				int iBoostMax = floor( pTFPlayer->m_Shared.GetMaxBuffedHealth() * 0.95);
+				float fBoostMax = pTFPlayer->m_Shared.GetMaxBuffedHealth() * 0.95;
 				float flChargeModifier = 1.f;
 
 				bool bTargetOverhealBlocked = false;
@@ -1267,6 +1267,15 @@ bool CWeaponMedigun::FindAndHealTargets( void )
 						bTargetOverhealBlocked = true;
 					}
 				}
+
+				// If we aren't already blocking overheal, take into account patient overheal factors for determining boost pct
+				if (!bTargetOverhealBlocked)
+				{
+					// MIN here to keep the max boost at max health for buffing, but we can go lower if there's a penalty.
+					fBoostMax *= MIN( GetOverHealBonus( pTFPlayer ), 1.f );
+				}
+
+				int iBoostMax = floor( fBoostMax );
 
 				// Reduced charge for healing fully healed guys
 				if ( ( bTargetOverhealBlocked || ( pNewTarget->GetHealth() >= iBoostMax ) ) && ( TFGameRules() && !(TFGameRules()->InSetup() && TFGameRules()->GetActiveRoundTimer() ) ) )

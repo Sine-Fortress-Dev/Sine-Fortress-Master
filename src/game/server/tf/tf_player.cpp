@@ -230,6 +230,8 @@ ConVar tf_highfive_max_range( "tf_highfive_max_range", "150", FCVAR_CHEAT | FCVA
 ConVar tf_highfive_height_tolerance( "tf_highfive_height_tolerance", "12", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "The maximum height difference allowed for two high-fivers." );
 ConVar tf_highfive_debug( "tf_highfive_debug", "0", FCVAR_NONE, "Turns on some console spew for debugging high five issues." );
 
+ConVar tf_taunt_first_person_always( "tf_taunt_first_person_always", "1", FCVAR_REPLICATED, "1 = taunts are forced to remain first-person" );
+
 ConVar tf_test_teleport_home_fx( "tf_test_teleport_home_fx", "0", FCVAR_CHEAT );
 
 ConVar tf_halloween_giant_health_scale( "tf_halloween_giant_health_scale", "10", FCVAR_CHEAT );
@@ -843,6 +845,8 @@ IMPLEMENT_SERVERCLASS_ST( CTFPlayer, DT_TFPlayer )
 	SendPropInt( SENDINFO( m_iPlayerSkinOverride ) ),
 	SendPropBool( SENDINFO( m_bViewingCYOAPDA ) ),
 	SendPropBool( SENDINFO( m_bRegenerating ) ),
+	SendPropInt( SENDINFO( m_nRestrictAchievements ), 2, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nRestrictQuests ), 2, SPROP_UNSIGNED ),
 END_SEND_TABLE()
 
 // -------------------------------------------------------------------------------- //
@@ -997,7 +1001,6 @@ CTFPlayer::CTFPlayer()
 	m_flNextChangeClassTime = 0.0f;
 	m_flNextChangeTeamTime = 0.0f;
 
-	m_bScattergunJump = false;
 	m_iOldStunFlags = 0;
 	m_iLastWeaponSlot = 1;
 	m_iNumberofDominations = 0;
@@ -1104,6 +1107,9 @@ CTFPlayer::CTFPlayer()
 	m_flNextScorePointForPD = -1;
 
 	m_iPlayerSkinOverride = 0;
+
+	m_nRestrictAchievements = 0;
+	m_nRestrictQuests = 0;
 
 	m_nPrevRoundTeamNum = TEAM_UNASSIGNED;
 	m_flLastDamageResistSoundTime = -1.f;
@@ -3781,7 +3787,6 @@ void CTFPlayer::Spawn()
 
 	m_Shared.SetFeignDeathReady( false );
 
-	m_bScattergunJump = false;
 	m_iOldStunFlags = 0;
 
 	m_flAccumulatedHealthRegen = 0;
@@ -12548,6 +12553,11 @@ void CTFPlayer::Event_Killed( const CTakeDamageInfo &info )
 
 		// reset fov to default
 		SetFOV( this, 0 );
+		// reset roll
+		QAngle angles = pl.v_angle;
+		angles.z = 0;
+		SetLocalAngles( angles );
+		SnapEyeAngles( angles );
 	}
 	else if ( info.GetAttacker() && info.GetAttacker()->IsBaseObject() )
 	{
@@ -14713,6 +14723,14 @@ void CTFPlayer::ForceRespawn( void )
 	if ( HasTheFlag() )
 	{
 		DropFlag();
+	}
+
+	// Prevent bypassing class limits. Whoever wins on the draw can spawn as this class,
+	// and anyone who comes after will get swapped back to their old class.
+	if (!TFGameRules()->CanPlayerChooseClass(this, iDesiredClass))
+	{
+		iDesiredClass = GetPlayerClass()->GetClassIndex();
+		ClientPrint( this, HUD_PRINTCENTER, "#TF_ClassLimitReached" ); // NOTE: Add localization string 
 	}
 
 	if ( GetPlayerClass()->GetClassIndex() != iDesiredClass )
@@ -18039,6 +18057,9 @@ void CTFPlayer::Taunt( taunts_t iTauntIndex, int iTauntConcept )
 					// Time for crits!
 					m_Shared.ActivateRageBuff( this, iBuffType );
 
+					// Don't allow the taunt to be cancelled
+					m_bAllowMoveDuringTaunt = true;
+
 					// Pyro needs high defense while he's taunting
 					//m_Shared.AddCond( TF_COND_DEFENSEBUFF_HIGH, 3.0f );
 					m_Shared.AddCond( TF_COND_INVULNERABLE_USER_BUFF, 2.60f );
@@ -20338,6 +20359,12 @@ int	CTFPlayer::CalculateTeamBalanceScore( void )
 //-----------------------------------------------------------------------------
 void CTFPlayer::AwardAchievement( int iAchievement, int iCount )
 {
+	// when set to 2, this netprop prevents its player from earning any achievements
+	if (m_nRestrictAchievements == 2)
+	{
+		return;
+	}
+
 	if ( TFGameRules()->State_Get() >= GR_STATE_TEAM_WIN )
 	{
 		// allow the Helltower loot island achievement during the bonus time

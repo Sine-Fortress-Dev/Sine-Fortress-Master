@@ -1092,6 +1092,7 @@ CStudioHdr *C_BaseAnimating::OnNewModel()
 		}
 	}
 	m_BoneAccessor.Init( this, m_CachedBoneData.Base() ); // Always call this in case the studiohdr_t has changed.
+	m_iAccumulatedBoneMask = 0; // Reset the accumulated bone mask.
 
 	// Free any IK data
 	if (m_pIk)
@@ -2029,18 +2030,24 @@ bool C_BaseAnimating::PutAttachment( int number, const matrix3x4_t &attachmentTo
 		return false;
 
 	CAttachmentData *pAtt = &m_Attachments[number-1];
-	if ( gpGlobals->frametime > 0 && pAtt->m_nLastFramecount > 0 && pAtt->m_nLastFramecount == gpGlobals->framecount - 1 )
+	if ( gpGlobals->frametime > 0 && pAtt->m_nLastFramecount > 0 && pAtt->m_nLastFramecount < gpGlobals->framecount )
 	{
 		Vector vecPreviousOrigin, vecOrigin;
 		MatrixPosition( pAtt->m_AttachmentToWorld, vecPreviousOrigin );
 		MatrixPosition( attachmentToWorld, vecOrigin );
-		pAtt->m_vOriginVelocity = (vecOrigin - vecPreviousOrigin) / gpGlobals->frametime;
+		// compensate for the fact that the previous origin could have been multiple frames behind
+		pAtt->m_vOriginVelocity = (vecOrigin - vecPreviousOrigin) / (gpGlobals->frametime * (gpGlobals->framecount - pAtt->m_nLastFramecount));
+		// only update the frame count if the position changed, so we don't have to recompute attachments
+		if ( !pAtt->m_vOriginVelocity.IsZero(0.00001f) )
+		{
+			pAtt->m_nLastFramecount = gpGlobals->framecount;
+		}
 	}
 	else
 	{
 		pAtt->m_vOriginVelocity.Init();
+		pAtt->m_nLastFramecount = gpGlobals->framecount;
 	}
-	pAtt->m_nLastFramecount = gpGlobals->framecount;
 	pAtt->m_bAnglesComputed = false;
 	pAtt->m_AttachmentToWorld = attachmentToWorld;
 
@@ -2051,6 +2058,20 @@ bool C_BaseAnimating::PutAttachment( int number, const matrix3x4_t &attachmentTo
 	return true;
 }
 
+bool C_BaseAnimating::GetAttachmentDeferred( int number, matrix3x4_t& matrix )
+{
+	if (number < 1 || number > m_Attachments.Count())
+		return false;
+
+	// allow visual effects (eg. particles) to be a frame behind bone setup so that there are not messy dependencies.
+	CAttachmentData* pAtt = &m_Attachments[number - 1];
+	const bool bShouldUpdate = pAtt->m_nLastFramecount < gpGlobals->framecount - 1;
+	if ( bShouldUpdate && !CalcAttachments() )
+		return false;
+
+	matrix = pAtt->m_AttachmentToWorld;
+	return true;
+}
 
 bool C_BaseAnimating::SetupBones_AttachmentHelper( CStudioHdr *hdr )
 {
@@ -2850,6 +2871,20 @@ bool C_BaseAnimating::SetupBones( matrix3x4_t *pBoneToWorldOut, int nMaxBones, i
 		}
 	}
 
+	// If we're setting up LOD N, we have set up all lower LODs also
+	// because lower LODs always use subsets of the bones of higher LODs.
+	int nLOD = 0;
+	int nMask = BONE_USED_BY_VERTEX_LOD0;
+	for( ; nLOD < MAX_NUM_LODS; ++nLOD, nMask <<= 1 )
+	{
+		if ( boneMask & nMask )
+			break;
+	}
+	for( ; nLOD < MAX_NUM_LODS; ++nLOD, nMask <<= 1 )
+	{
+		boneMask |= nMask;
+	}
+
 #ifdef DEBUG_BONE_SETUP_THREADING
 	if ( cl_warn_thread_contested_bone_setup.GetBool() )
 	{
@@ -2882,7 +2917,9 @@ bool C_BaseAnimating::SetupBones( matrix3x4_t *pBoneToWorldOut, int nMaxBones, i
 			m_flLastBoneSetupTime = currentTime;
 		}
 		m_iPrevBoneMask = m_iAccumulatedBoneMask;
-		m_iAccumulatedBoneMask = 0;
+		// Keep record of the fact that we've used attachments. Because of deferred attachments, we can't keep track from the previous frame.
+		//m_iAccumulatedBoneMask = 0;
+		m_iAccumulatedBoneMask = m_iAccumulatedBoneMask & BONE_USED_BY_ATTACHMENT;
 
 #ifdef STUDIO_ENABLE_PERF_COUNTERS
 		CStudioHdr *hdr = GetModelPtr();
@@ -2917,7 +2954,7 @@ bool C_BaseAnimating::SetupBones( matrix3x4_t *pBoneToWorldOut, int nMaxBones, i
 			return false;
 
 		// Setup our transform based on render angles and origin.
-		matrix3x4_t parentTransform;
+		ALIGN16 matrix3x4_t parentTransform ALIGN16_POST;
 		AngleMatrix( GetRenderAngles(), GetRenderOrigin(), parentTransform );
 
 		// Load the boneMask with the total of what was asked for last frame.

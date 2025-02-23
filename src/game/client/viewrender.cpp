@@ -2597,7 +2597,7 @@ void CViewRender::DetermineWaterRenderInfo( const VisibleFogVolumeInfo_t &fogVol
 	// Gary says: I'm reverting this change so that water LOD works on dx9 for ep2.
 
 	// Check if the water is out of the cheap water LOD range; if so, use cheap water
-#ifdef _X360
+#if 1
 	if ( !bForceExpensive && ( bForceCheap || ( fogVolumeInfo.m_flDistanceToWater >= m_flCheapWaterEndDistance ) ) )
 	{
 		return;
@@ -4164,7 +4164,7 @@ void CRendering3dView::DrawOpaqueRenderables( ERenderDepthMode DepthMode )
 					arrBoneSetupNpcsLast[ numOpaqueEnts - numNpcs ] = pba;
 					
 					itEntity->m_pRenderable = NULL;		// We will render NPCs separately
-					itEntity->m_RenderHandle = NULL;
+					itEntity->m_RenderHandle = INVALID_CLIENT_RENDER_HANDLE;
 					
 					continue;
 				}

@@ -374,6 +374,12 @@ bool CTFQuestCondition::IsValidForPlayer( const CTFPlayer *pOwner, InvalidReason
 
 		// Can only do quests on Valve servers
 		IsValidServerForQuests( steamIDOwner, invalidReasons );
+
+		// m_nRestrictQuests set to 2 prevents from earning quests
+		if ( pOwner->GetQuestRestrictions() == 2 )
+		{
+			invalidReasons.m_bits.Set( INVALID_QUEST_REASON_WRONG_CLASS );
+		}
 	}
 
 	return true;
@@ -1144,7 +1150,7 @@ protected:
 
 		int nNumJumps = pNonConstPlayer->GetGroundEntity() == NULL ? 1 : 0;
 		nNumJumps += pPlayer->m_Shared.GetAirDash();
-		nNumJumps += pPlayer->m_bScattergunJump;
+		nNumJumps += pPlayer->m_Shared.m_bScattergunJump;
 
 		if ( m_eJumpingState == JUMPING_STATE_IS_NOT_JUMPING )
 		{
@@ -1483,8 +1489,9 @@ private:
 	virtual bool BPlayerCheck( const CTFPlayer* pPlayer, IGameEvent *pEvent ) const OVERRIDE
 	{
 		// Check if the classes match
+		// m_nRestrictQuests set to 1 prevents from earning class-specific quests
 		int iClass = pPlayer->GetPlayerClass()->GetClassIndex();
-		return m_iClass == iClass;
+		return m_iClass == iClass && pPlayer->GetQuestRestrictions() == 0;
 	}
 
 
@@ -3027,7 +3034,7 @@ bool CTFJumpStateQuestModifier::BPassesModifier( const CTFPlayer *pOwner, Invali
 #else
 	int nNumJumps = const_cast< CTFPlayer* >( pOwner )->GetGroundEntity() == NULL ? 1 : 0;
 	nNumJumps += pOwner->m_Shared.GetAirDash();
-	nNumJumps += pOwner->m_bScattergunJump;
+	nNumJumps += pOwner->m_Shared.m_bScattergunJump;
 
 	// If we want them on the ground, make sure they're on the ground
 	if ( m_nJumpCount == 0 )
