@@ -6,7 +6,7 @@
 
 $Macro SRCDIR		"..\.."
 $Macro GAMENAME 	"tf" [!$SOURCESDK]
-$Macro GAMENAME 	"tc2" [$SOURCESDK]
+$Macro GAMENAME 	"sine_fortress" [$SOURCESDK]
 
 // This code currently only builds on Windows (itemtest_lib and dependencies)
 $Conditional WORKSHOP_IMPORT_ENABLE	1 [$WINDOWS && !$SOURCESDK]
@@ -23,7 +23,7 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories	".\hl2;.\hl2\elements;.\tf;.\tf\vgui;..\statemachine;$SRCDIR\game\shared\multiplayer;$SRCDIR\game\shared\tf;$SRCDIR\gcsdk\steamextra;$BASE;.\econ"
-		$PreprocessorDefinitions		"$BASE;TF_CLIENT_DLL;USES_ECON_ITEMS;ENABLE_GC_MATCHMAKING;GLOWS_ENABLE;USE_DYNAMIC_ASSET_LOADING;VOTING_ENABLED;NEXT_BOT"
+		$PreprocessorDefinitions		"$BASE;TF_CLIENT_DLL;USES_ECON_ITEMS;ENABLE_GC_MATCHMAKING;GLOWS_ENABLE;USE_DYNAMIC_ASSET_LOADING;VOTING_ENABLED;NEXT_BOT;SF_DLL"
 		$PreprocessorDefinitions		"$BASE;SAXXYMAINMENU_ENABLED" [$SAXXYAWARDS_ENABLE]
 		$PreprocessorDefinitions		"$BASE;WORKSHOP_IMPORT_ENABLED" [$WORKSHOP_IMPORT_ENABLE]
 		$PreprocessorDefinitions		"$BASE;SIXENSE" [!$SOURCESDK]
@@ -31,7 +31,7 @@ $Configuration
 	}
 }
 
-$Project "Client (TF)"
+$Project "Client (SF)"
 {
 	$Folder "Source Files"
 	{

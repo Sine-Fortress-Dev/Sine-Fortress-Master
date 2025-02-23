@@ -1,4 +1,4 @@
-$Macro OUTBINNAME "tc2"
+$Macro OUTBINNAME "sine_fortress"
 
 $Conditional "MOD_LAUNCHER" "1"
 
@@ -12,11 +12,11 @@ $Configuration
 	}
 }
 
-$Project "Launcher Main (TC2)"
+$Project "Launcher Main (SF)"
 {
     $Folder "Resource Files" [$WINDOWS]
     {
-        $File   "launcher_main_tc2.rc"
-        $File   "res\tc2.ico"
+        $File   "launcher_main_sf.rc"
+        $File   "res\sf.ico"
     }
 }

@@ -450,11 +450,11 @@ public:
 	{
 		const char *pGameDir = COM_GetModDirectory();
 
-		// Team Comtress 2?
-		if ( FStrEq( pGameDir, "tc2" ) )
+		// Sine Fortress?
+		if ( FStrEq( pGameDir, "sine_fortress" ) )
 		{
-			*ppShortGameName = "TC2";
-			*ppFullGameName = "Team Comtress 2";
+			*ppShortGameName = "SF";
+			*ppFullGameName = "Sine Fortress";
 		}
 		// Team Fortress 2?
 		if ( FStrEq( pGameDir, "tf" ) )
