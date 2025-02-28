@@ -21721,6 +21721,7 @@ bool CTFGameRules::CanUpgradeWithAttrib( CTFPlayer *pPlayer, int iWeaponSlot, at
 				iWeaponID != TF_WEAPON_NONE && !bHideDmgUpgrades && 
 				iWeaponID != TF_WEAPON_FLAMETHROWER && 
 				iWeaponID != TF_WEAPON_FLAME_BALL &&
+				iWeaponID != TF_WEAPON_GOOGUN &&
 				!WeaponID_IsSniperRifleOrBow( iWeaponID ) && 
 				!( pWeapon && pWeapon->HasEffectBarRegeneration() ) &&
 				!bMinigun );
@@ -21947,7 +21948,12 @@ bool CTFGameRules::CanUpgradeWithAttrib( CTFPlayer *pPlayer, int iWeaponSlot, at
 		{
 			return ( iWeaponID == TF_WEAPON_JAR_GAS );
 		}
+	case 3019:
+		{
+			return ( iWeaponID == TF_WEAPON_GOOGUN );
+		}
 	}
+
 
 	// All weapon related attributes require an item that does damage
 	if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_ATTACHED_TO_ITEM )

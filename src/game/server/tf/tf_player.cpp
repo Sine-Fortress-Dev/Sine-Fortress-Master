@@ -4127,6 +4127,11 @@ void CTFPlayer::Regenerate( bool bRefillHealthAndAmmo /*= true*/ )
 			m_Shared.RemoveCond( TF_COND_PLAGUE );
 		}
 
+		if (m_Shared.InCond(TF_COND_ACID_BURN))
+		{
+			m_Shared.RemoveCond(TF_COND_ACID_BURN);
+		}
+
 
 		m_Shared.SetSpyCloakMeter( 100.0f );
 		m_Shared.SetScoutEnergyDrinkMeter( 100.0f );
@@ -8919,6 +8924,12 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	// Early out if there's no damage
 	if ( !info.GetDamage() )
 		return 0;
+
+	if (info.GetDamageType() & DMG_FALL && m_bDisableNextFallDamage)
+	{
+		m_bDisableNextFallDamage = false;
+		return 0;
+	}
 
 	// Ghosts dont take damage
 	if ( m_Shared.InCond( TF_COND_HALLOWEEN_GHOST_MODE ) )

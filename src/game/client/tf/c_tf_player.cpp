@@ -3849,6 +3849,7 @@ C_TFPlayer::C_TFPlayer() :
 	m_pTeleporterEffect = NULL;
 	m_pBurningSound = NULL;
 	m_pBurningEffect = NULL;
+	m_pBurningEffect = NULL;
 	m_pUrineEffect = NULL;
 	m_pMilkEffect = NULL;
 	m_pGasEffect = NULL;
